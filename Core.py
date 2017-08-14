@@ -14,7 +14,7 @@ custom_settings_filepath = 'C:\\Users\\David\\Desktop\\Settings.json'
 
 default_settings_filepath = 'Settings.json'
 settings_filepath = input('Where can we find bot settings? (Push Enter for default)> ')
-bot_version = '0.1-R1.10'
+bot_version = '0.1-R1.25'
 online_users = []
 authorized_admin_roles = ['Admin']
 authorized_mod_roles = ['Moderator']
@@ -39,6 +39,10 @@ if my_file.is_file():
     bot_description = settings['bot_description']
     bot_prefix = settings['bot_prefix']
     authorized_users = settings['authorized_users']
+    authorized_admin_roles.clear()
+    authorized_mod_roles.clear()
+    authorized_admin_roles = settings['authorized_admin_roles']
+    authorized_mod_roles = settings['authorized_mod_roles']
     
 else:
     print('Settings File does not exist, please follow along for setup.')
@@ -124,6 +128,54 @@ def remove_authorized_user(user):
             return '%s removed successfully' % member.name
         user_found = 0
 
+def add_admins_role(role):
+    role_found = 0
+    if role is not None:
+        for admin_role in authorized_admin_roles:
+            if admin_role == role:
+                role_found = 1
+                return '%s is already an admin role.' % role
+    if role_found == 0:
+        authorized_admin_roles.append(role)
+        return '%s added to admin roles successfully' % role
+    role_found = 0
+            
+def remove_admins_role(role):
+    role_found = 0
+    if role is not None:
+        for admin_role in authorized_admin_roles:
+            if admin_role == role:
+                role_found = 1
+    if role_found == 1:
+        authorized_admin_roles.remove(role)
+        return '%s removed from admin roles successfully' % role
+    return '%s is not an authorzied admin role.' % role
+    role_found = 0
+
+def add_mods_role(role):
+    role_found = 0
+    if role is not None:
+        for mod_role in authorized_mod_roles:
+            if mod_role == role:
+                role_found = 1
+                return '%s is already a mod role.' % role
+    if role_found == 0:
+        authorized_mod_roles.append(role)
+        return '%s added to mod roles successfully' % role
+    role_found = 0
+    
+def remove_mods_role(role):
+    role_found = 0
+    if role is not None:
+        for mod_role in authorized_mod_roles:
+            if mod_role == role:
+                role_found = 1
+    if role_found == 1:
+        authorized_mod_roles.remove(role)
+        return '%s removed from mod roles successfully' % role
+    return '%s is not an authorized mod role.' % role
+    role_found = 0
+
 #------------------------------------------------------------------------------
 
 #            Below is all the commands and events
@@ -157,14 +209,29 @@ async def remove_auth_user(context, msg):
         await bot.send_message(context.message.author, remove_authorized_user(msg))
 
 @bot.command(pass_context=True)
-async def debug_toggle(context, msg):
-    if msg == 'on':
-        debug_toggle_code = 1
-        await bot.send_message(context.message.author, 'Debug enabled. Check console for debug messages.')
-        debug('Test')
-    elif msg == 'off':
-        debug_toggle_code = 0
-        await bot.send_message(context.message.author, 'Debug disabled.')
+async def add_admin_role(context, msg):
+    if check_authorized_user(context.message.author):
+        await bot.send_message(context.message.author, add_admins_role(msg))
+
+@bot.command(pass_context=True)
+async def remove_admin_role(context, msg):
+    if check_authorized_user(context.message.author):
+        await bot.send_message(context.message.author, remove_admins_role(msg))
+    
+@bot.command(pass_context=True)
+async def add_mod_role(context, msg):
+    if check_authorized_user(context.message.author):
+        await bot.send_message(context.message.author, add_mods_role(msg))
+
+@bot.command(pass_context=True)
+async def remove_mod_role(context, msg):
+    if check_authorized_user(context.message.author):
+        await bot.send_message(context.message.author, remove_mods_role(msg))
+
+@bot.command(pass_context=True)
+async def test(context):
+    for role in bot_server.get_member_named(context.message.author.name).roles:
+        print(role.name)
     
 @bot.command(pass_context=True)
 async def logout(context):
