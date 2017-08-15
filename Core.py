@@ -1,11 +1,9 @@
-# MzQ1NjM2MjY1MzQ3MjUyMjM1.DG-Klg.ewkeS1cwl_REPPewIkT3-Zkwbgs
-
 import discord
 import json
 from discord.ext import commands
 from pathlib import Path
 
-# Put your Settings File path here to avoid typing it in everytime
+# Put your Custom Settings File path here to avoid typing it in everytime
 custom_settings_filepath = 'C:\\Users\\David\\Desktop\\Settings.json'
 
 # ------------------------------------------------
@@ -13,16 +11,22 @@ custom_settings_filepath = 'C:\\Users\\David\\Desktop\\Settings.json'
 # ------------------------------------------------
 
 default_settings_filepath = 'Settings.json'
-settings_filepath = input('Where can we find bot settings? (Push Enter for default)> ')
-bot_version = '0.1-R1.25'
+settings_filepath = input('Where can we find bot settings? (Push Enter for default or Enter \'Custom\' for custom path)> ')
+
+bot_version = '0.1-R2.22'
 online_users = []
 authorized_admin_roles = ['Admin']
 authorized_mod_roles = ['Moderator']
 authorized_users = []
+banned_words = ['test']
 
 if settings_filepath == '':
     settings_filepath = default_settings_filepath
     print('Loading default settings filepath...')
+
+if settings_filepath.lower() == 'custom':
+    settings_filepath = custom_settings_filepath
+    print('Loading custom settings filepath...')
 
 my_file = Path(settings_filepath)
 if my_file.is_file():
@@ -55,7 +59,7 @@ else:
         bot_prefix = '~'
     
 
-bot = commands.Bot(command_prefix=bot_prefix, description=bot_description + ' - Version: %s' % bot_version)
+bot = commands.Bot(command_prefix=bot_prefix, description=bot_description)
 
 def set_globals():
     global bot_owner
@@ -89,10 +93,25 @@ def refresh_online_users():
             online_users.append(member.name)
             debug(member.name)
 
-def check_authorized_user(user):    
+def check_authorized_user(user):
     for auth_user in authorized_users:
         if auth_user == user.name:
             return True
+
+    member = bot_server.get_member_named(user.name)
+    user_roles = []
+    for role in member.roles:
+        user_roles.append(role.name)
+    
+    for auth_admin_role in authorized_admin_roles:
+        if auth_admin_role in user_roles:
+            user_roles.clear()
+            return True
+    for auth_mod_role in authorized_mod_roles:
+        if auth_mod_role in user_roles:
+            user_roles.clear()
+            return True
+    user_roles.clear()
     return False
             
 def add_authorized_user(user):
@@ -176,6 +195,28 @@ def remove_mods_role(role):
     return '%s is not an authorized mod role.' % role
     role_found = 0
 
+def check_words(sentence):
+    print(sentence)
+    word = 'test'
+    sentence = sentence.lower()
+    word_list = sentence.split()
+    if word in word_list:
+        for index, item in enumerate(word_list):
+            if word == item:
+                print('Index of: [%s], for word: [%s]' % (index, item))
+                word_list[index] = '*' * len(word)
+    else:
+        print('False')
+    
+    newSentence = ''
+    for word in word_list:
+        if newSentence == '':
+            newSentence += word.capitalize()
+        else:
+            newSentence += ' ' + word
+    print(newSentence)
+    
+
 #------------------------------------------------------------------------------
 
 #            Below is all the commands and events
@@ -183,10 +224,13 @@ def remove_mods_role(role):
 #------------------------------------------------------------------------------
 @bot.event
 async def on_ready():
-    print(bot.description)
-    print('Logged in as:\nUser: %s | ID: %s' % (bot.user.name, bot.user.id))
+    bottom_line = '-' * (len(bot.description) + 16)
+    data = {'description' : bot.description, 'version' : bot_version, 'user' : bot.user.name, 'id' : bot.user.id, 'bottom' : bottom_line}
+    start_message = '----- [ {description} ] -----\nVersion: {version}\nLogged in as: {user} | ID: {id}\n{bottom}'.format(**data)
+    print(start_message)
     set_globals()
     save_settings()
+    
 
 @bot.command(pass_context=True)
 async def version(context):
@@ -230,8 +274,7 @@ async def remove_mod_role(context, msg):
 
 @bot.command(pass_context=True)
 async def test(context):
-    for role in bot_server.get_member_named(context.message.author.name).roles:
-        print(role.name)
+    await bot.say(bot_server.roles)
     
 @bot.command(pass_context=True)
 async def logout(context):
